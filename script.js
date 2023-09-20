@@ -484,12 +484,46 @@ function instructions() {
         message.innerHTML = `
             <div style="max-width: 600px; margin: auto; padding: 20px; font-family: 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; text-align: left; color: #333;">
                 <strong style="font-size: 1.3em; display: block; text-align: center; margin-bottom: 20px;">Calibration the eye tracking functionality!</strong>
-                <p style="margin-top: 20px;">Now please sit up in front of the web camera, look at the calibration point and click the point 5 times. After finishing clicking on all points, they will automatically disappear, then click on next to move on to the experiment part!</p>
+                <p style="margin-top: 20px;">Now please sit up in front of the web camera, wait until a video view appears at the top left. And make sure that your head is within the green square, and the face is captured correctly by the grids. When you are ready, click on next to move to calibration section!</p>
+            </div>
+        `;
+        message.style.display = 'block';  // Make sure the message is visible
+
+        // Initialize Webgazer and start gaze tracking
+        webgazer.setGazeListener(function(data, elapsedTime) {
+            // This function will be called when the gaze data is updated
+            // Extract the gaze coordinates from the data object
+            const x = data.x; // X-coordinate of gaze point on the screen
+            const y = data.y; // Y-coordinate of gaze point on the screen
+            console.log(data); // Use gaze data as per your requirements
+        }).begin();
+
+        webgazer.setTracker("TFFacemesh"); //set a tracker module
+        webgazer.setRegression("ridge"); //set a regression module
+
+        webgazer.showPredictionPoints(true); // Show gaze prediction points on the screen
+
+        // Start tracking gaze
+        webgazer.showVideo(true); // Show webcam video feed
+        webgazer.showFaceOverlay(true); // Hide face overlay (optional)
+
+        clearButtons();
+
+
+        addButton(createButton("Next", () => {
+        clearButtons();
+        message.style.display = 'none';  // Make sure the message is visible
+
+        message.innerHTML = `
+            <div style="max-width: 600px; margin: auto; padding: 20px; font-family: 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; text-align: left; color: #333;">
+                <p style="margin-top: 20px;">Look at the calibration point and click the point 5 times. After finishing clicking on all points, they will automatically disappear, and you will be provided with a score of accuracy!</p>
             </div>
         `;
         message.style.display = 'block';  // Make sure the message is visible
 
         function calibration() {
+            clearButtons();
+
             // Array of calibration points (x, y) screen coordinates
             const calibrationPoints = [
               { x: window.innerWidth / 3, y: 30 }, // UpperLeft-middle
@@ -529,21 +563,70 @@ function instructions() {
               return button;
             }
 
-            function precisionCalculation() {
-                const centerX = window.innerWidth / 2;
-                const centerY = window.innerHeight / 2;
+            // Initialize an array to store distances from the center point
+            const distancesFromCenter = [];
+            const centerX = window.innerWidth / 2;
+            const centerY = window.innerHeight / 2;
 
-                // Initialize an array to store distances from the center point
-                const distancesFromCenter = [];
-                // Iterate through predictedPoints
-                for (const gazePoint of predictedPoints) {
-                  const [gazeX, gazeY] = gazePoint;
-                  // Calculate the Euclidean distance between the gaze point and the center point
-                  const distance = Math.sqrt(Math.pow(gazeX - centerX, 2) + Math.pow(gazeY - centerY, 2));
-                  console.log(distance)
-                  // Add the distance to the distancesFromCenter array
-                  distancesFromCenter.push(distance);
+            // Create the red fixation point for accuracy calculation
+            const fixationPoint = document.createElement("div");
+
+                fixationPoint.style.width = "10px"; // Adjust the size as needed
+                fixationPoint.style.height = "10px"; // Adjust the size as needed
+                fixationPoint.style.backgroundColor = "red";
+                fixationPoint.style.borderRadius = "50%"; // Makes it a circle
+                fixationPoint.style.position = "absolute";
+                fixationPoint.style.top = "50%"; // Position it vertically at the middle
+                fixationPoint.style.left = "50%"; // Position it horizontally at the middle
+                fixationPoint.style.transform = "translate(-50%, -50%)"; // Center it precisely
+
+            var storedArray = [[], []];
+
+            function collectingPrediction() {
+                console.log("Collecting testing points")
+                var prediction = webgazer.getCurrentPrediction();
+                console.log("prediction: ",prediction);
+                prediction.then(function(value) {
+                    console.log("value", value)
+                    var pointX = value.x;
+                    console.log("Stored pointX: ", pointX)
+                    storedArray[0].push(pointX);
+                    var pointY = value.y;
+                    console.log("Stored pointY: ", pointY)
+                    storedArray[1].push(pointY);
+                })
+
+//                webgazer.params.storingPoints = true;
+            }
+
+            function precisionCalculation() {
+                // Hide fixation point
+                fixationPoint.style.display = 'none';
+                console.log("Stored array: ", storedArray)
+
+//                var storedArray = webgazer.getStoredPoints(); // retrieve the stored points
+//
+//                // Stop storing prediction points
+//                webgazer.params.storingPoints = false;
+//
+//                console.log("storedPoints:", storedArray)
+
+                var x = storedArray[0];
+                var y = storedArray[1];
+                console.log("Stored array:  - X array:",x)
+
+                for (n=0; n < x.length; n++) {
+                    console.log("storedPoints - xn:",x[n])
+                    xDiff = x[n] - centerX
+                    yDiff = y[n] - centerY
+                    // Calculate the Euclidean distance between the gaze point and the center point
+                    const distance = Math.sqrt(Math.pow(xDiff, 2) + Math.pow(yDiff, 2));
+                    console.log("distance - xn", distance)
+                    // Add the distance to the distancesFromCenter array
+                    distancesFromCenter.push(distance);
                 }
+
+                console.log("total distance array:", distancesFromCenter)
 
                 // Now you have an array distancesFromCenter with distances for each gaze point
 
@@ -554,9 +637,21 @@ function instructions() {
                 // Count the number of accurate gaze points based on the threshold
                 const accurateGazePoints = distancesFromCenter.filter(distance => distance <= accuracyThreshold).length;
                 // Calculate the accuracy percentage
-                const accuracyPercentage = (accurateGazePoints / distancesFromCenter.length) * 100;
 
-                console.log(accuracyThreshold)
+                // Stricter method with threshold
+                const accuracyPercentage2 = (accurateGazePoints / distancesFromCenter.length) * 100;
+
+                if (averageDistance <= window.innerHeight / 2) {
+                    accuracyPercentage = (100 - (averageDistance/window.innerHeight / 2 * 100)).toFixed(2);
+                }
+                else {accuracyPercentage = 0}
+
+                // Now you have the accuracy metrics, such as average distance and accuracy percentage
+                console.log("Average Distance:", averageDistance);
+                console.log("Accuracy Percentage:", accuracyPercentage);
+                console.log("Accuracy Percentage2:", accuracyPercentage2)
+
+                console.log("accuracyThreshold:", accuracyThreshold)
 
                 // Now you have the accuracy metrics, such as average distance and accuracy percentage
                 console.log("Average Distance:", averageDistance);
@@ -571,6 +666,18 @@ function instructions() {
                 `;
                 message.style.display = 'block';  // Make sure the message is visible
                 message.innerHTML += accuracyPercentage
+//                message.innerHTML += accuracyPercentage2
+
+                // Provide options to recalibrate or move to next
+                clearButtons();
+                addButton(createButton("Recalibrate", () => {
+                    message.style.display = 'none';  // Make sure the message is visible
+                    calibration();
+                }));
+                addButton(createButton("Next", () => {
+                    message.style.display = 'none';  // Make sure the message is visible
+                    experimentalSet();
+                }));
             }
 
             // Function to move to the next calibration point
@@ -590,17 +697,6 @@ function instructions() {
                 console.log('Calibration completed.');
                 currentButton.remove(); // Remove the last button
 
-                // Create the red fixation point for accuracy calculation
-                const fixationPoint = document.createElement("div");
-                fixationPoint.style.width = "10px"; // Adjust the size as needed
-                fixationPoint.style.height = "10px"; // Adjust the size as needed
-                fixationPoint.style.backgroundColor = "red";
-                fixationPoint.style.borderRadius = "50%"; // Makes it a circle
-                fixationPoint.style.position = "absolute";
-                fixationPoint.style.top = "50%"; // Position it vertically at the middle
-                fixationPoint.style.left = "50%"; // Position it horizontally at the middle
-                fixationPoint.style.transform = "translate(-50%, -50%)"; // Center it precisely
-
                 // Append the fixation point to the body element (or any other container you prefer)
                 document.body.appendChild(fixationPoint);
 
@@ -608,16 +704,33 @@ function instructions() {
                   let videoPage = document.getElementById("video");
                   message.innerHTML = `
                     <div style="max-width: 600px; margin: auto; padding: 20px; font-family: 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; text-align: left; color: #333;">
-                        <strong style="font-size: 1.3em; display: block; text-align: center; margin-bottom: 20px;">Please staring at the middle part without moving or clicking mouse. \n Calculating accuracy... </strong>
+                        <strong style="font-size: 1.3em; display: block; text-align: center; margin-bottom: 20px;">Please staring at the middle red point without moving or clicking mouse. The accuracy calculation will automatically start in 7 seconds. </strong>
                     </div>
                   `;
                 message.style.display = 'block';  // Make sure the message is visible
 
                 setTimeout(function() {
-                  // started calculate accuracy after 7 seconds
-                  precisionCalculation();
-                  fixationPoint.style.display = 'none';
-                }, 7000); // milliseconds
+                  // Hide the elements after the initial 7 seconds
+                  message.style.display = 'none';
+
+                  // Collect prediction points for 5 seconds
+                    function count(times) {
+                      var n = 0
+                      console.log("Now start collecting prediction points")
+//                      webgazer.params.storingPoints = true;
+                      collectingPrediction();
+                      while (n < times) {
+                        // collect points for n times
+                        n += 1;
+                      }
+                    }
+                    count(50);
+                  setTimeout(function() {
+                    // After collecting prediction, start calculating precision
+                    precisionCalculation();
+                  }, 1000);
+                }, 7000); // Initial 7 seconds delay
+
               }
             }
 
@@ -629,37 +742,9 @@ function instructions() {
 
         calibration(); // call calibration function
 
-
-
-        // Initialize Webgazer and start gaze tracking
-        webgazer.setGazeListener(function(data, elapsedTime) {
-            // This function will be called when the gaze data is updated
-            // Extract the gaze coordinates from the data object
-            const x = data.x; // X-coordinate of gaze point on the screen
-            const y = data.y; // Y-coordinate of gaze point on the screen
-            // Store the gaze coordinates in the predictedPoints array
-            predictedPoints.push([x, y]);
-            console.log(data); // Use gaze data as per your requirements
-        }).begin();
-
-        webgazer.setTracker("TFFacemesh"); //set a tracker module
-        webgazer.setRegression("ridge"); //set a regression module
-
-        webgazer.showPredictionPoints(true); // Show gaze prediction points on the screen
-
-        // Start tracking gaze
-        webgazer.showVideo(true); // Show webcam video feed
-        webgazer.showFaceOverlay(true); // Hide face overlay (optional)
-
         clearButtons();
-        addButton(createButton("Recalibrate", () => {
-            message.style.display = 'none';  // Make sure the message is visible
-            calibration();
-        }));
-        addButton(createButton("Next", () => {
-            message.style.display = 'none';  // Make sure the message is visible
-            experimentalSet();
-        }));
+
+        }))
     }));
 }
 
