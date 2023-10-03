@@ -510,6 +510,7 @@ function instructions() {
         clearButtons();
 
 
+        setTimeout(function () {
         addButton(createButton("Next", () => {
         clearButtons();
         message.style.display = 'none';  // Make sure the message is visible
@@ -713,7 +714,7 @@ function instructions() {
                   // Hide the elements after the initial 7 seconds
                   message.style.display = 'none';
 
-                  // Collect prediction points for 5 seconds
+                  // Collect prediction points for 1000 times
                     function count(times) {
                       var n = 0
                       console.log("Now start collecting prediction points")
@@ -724,7 +725,7 @@ function instructions() {
                         n += 1;
                       }
                     }
-                    count(50);
+                    count(1000);
                   setTimeout(function() {
                     // After collecting prediction, start calculating precision
                     precisionCalculation();
@@ -738,13 +739,19 @@ function instructions() {
             let currentCalibrationPointIndex = 0;
             let currentButton = createCalibrationButton(currentCalibrationPointIndex);
             document.body.appendChild(currentButton);
+
         }
 
-        calibration(); // call calibration function
+        setTimeout(function () {
+            calibration(); // call calibration function
+        }, 3000);
+
 
         clearButtons();
 
         }))
+        }, 7000);
+
     }));
 }
 
