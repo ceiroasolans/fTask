@@ -32,7 +32,7 @@ const videos = [
 //    { src: "1229.mp4", type: "Anger" },
 //    { src: "1844.mp4", type: "Anger" },
 //    { src: "2049.mp4", type: "Anger" },
-    { src: "2066.mp4", type: "Anger" },
+//    { src: "2066.mp4", type: "Anger" },
     { src: "0090.mp4", type: "Calmness" },
 //    { src: "0339.mp4", type: "Calmness" },
 //    { src: "0493.mp4", type: "Calmness" },
@@ -52,8 +52,8 @@ const videos = [
 //    { src: "1449.mp4", type: "Craving" },
 //    { src: "1498.mp4", type: "Craving" },
 //    { src: "1740.mp4", type: "Craving" },
-    { src: "1826.mp4", type: "Craving" },
-//    { src: "0187.mp4", type: "Disgust" },
+//    { src: "1826.mp4", type: "Craving" },
+    { src: "0187.mp4", type: "Disgust" },
 //    { src: "0235.mp4", type: "Disgust" },
 //    { src: "0355.mp4", type: "Disgust" },
 //    { src: "0713.mp4", type: "Disgust" },
@@ -63,7 +63,7 @@ const videos = [
 //    { src: "1423.mp4", type: "Disgust" },
 //    { src: "1907.mp4", type: "Disgust" },
 //    { src: "2018.mp4", type: "Disgust" },
-//    { src: "0041.mp4", type: "Excitement" },
+    { src: "0041.mp4", type: "Excitement" },
 //    { src: "0202.mp4", type: "Excitement" },
 //    { src: "0402.mp4", type: "Excitement" },
 //    { src: "0546.mp4", type: "Excitement" },
@@ -85,7 +85,7 @@ const videos = [
 //    { src: "1832.mp4", type: "Fear" },
 //    { src: "1964.mp4", type: "Fear" },
 //    { src: "2091.mp4", type: "Fear" },
-//    { src: "0723.mp4", type: "Interest" },
+    { src: "0723.mp4", type: "Interest" },
 //    { src: "0735.mp4", type: "Interest" },
 //    { src: "1066.mp4", type: "Interest" },
 //    { src: "1068.mp4", type: "Interest" },
@@ -96,7 +96,7 @@ const videos = [
 //    { src: "1641.mp4", type: "Interest" },
 //    { src: "1664.mp4", type: "Interest" },
 //    { src: "1945.mp4", type: "Interest" },
-//    { src: "0035.mp4", type: "Joy" },
+    { src: "0035.mp4", type: "Joy" },
 //    { src: "0087.mp4", type: "Joy" },
 //    { src: "0126.mp4", type: "Joy" },
 //    { src: "0597.mp4", type: "Joy" },
@@ -108,7 +108,7 @@ const videos = [
 //    { src: "1093.mp4", type: "Joy" },
 //    { src: "1245.mp4", type: "Joy" },
 //    { src: "2013.mp4", type: "Joy" },
-//    { src: "0204.mp4", type: "Romance" },
+    { src: "0204.mp4", type: "Romance" },
 //    { src: "0369.mp4", type: "Romance" },
 //    { src: "0773.mp4", type: "Romance" },
 //    { src: "1074.mp4", type: "Romance" },
@@ -136,8 +136,8 @@ const videos = [
 }
 
 
-
 let participantChoices = [];
+
 let startTime;
 
 function startTimer() {  // Function to start the timer when buttons appear
@@ -490,12 +490,24 @@ function instructions() {
         message.style.display = 'block';  // Make sure the message is visible
 
         // Initialize Webgazer and start gaze tracking
-        webgazer.setGazeListener(function(data, elapsedTime) {
-            // This function will be called when the gaze data is updated
-            // Extract the gaze coordinates from the data object
-            const x = data.x; // X-coordinate of gaze point on the screen
-            const y = data.y; // Y-coordinate of gaze point on the screen
-            console.log(data); // Use gaze data as per your requirements
+        let lastRecordingTime = null;
+        webgazer.setGazeListener(function(data, timestamp) {
+
+            // Check if at least 500 milliseconds have passed since the last recording
+            let lastRecordingTime = null;
+            const currentTime = new Date().getTime();
+            if (!lastRecordingTime || currentTime - lastRecordingTime >= 500) {
+                // This function will be called when the gaze data is updated
+                const x = data.x; // X-coordinate of gaze point on the screen
+                const y = data.y; // Y-coordinate of gaze point on the screen
+                console.log(data); // Use gaze data as per your requirements
+                participantChoices.push({
+                    gazingPointX: x,
+                    gazingPointY: y
+                });
+                // Update the last recording time
+                lastRecordingTime = currentTime;
+            }
         }).begin();
 
         webgazer.setTracker("TFFacemesh"); //set a tracker module
@@ -596,21 +608,12 @@ function instructions() {
                     console.log("Stored pointY: ", pointY)
                     storedArray[1].push(pointY);
                 })
-
-//                webgazer.params.storingPoints = true;
             }
 
             function precisionCalculation() {
                 // Hide fixation point
                 fixationPoint.style.display = 'none';
                 console.log("Stored array: ", storedArray)
-
-//                var storedArray = webgazer.getStoredPoints(); // retrieve the stored points
-//
-//                // Stop storing prediction points
-//                webgazer.params.storingPoints = false;
-//
-//                console.log("storedPoints:", storedArray)
 
                 var x = storedArray[0];
                 var y = storedArray[1];
@@ -657,6 +660,10 @@ function instructions() {
                 // Now you have the accuracy metrics, such as average distance and accuracy percentage
                 console.log("Average Distance:", averageDistance);
                 console.log("Accuracy Percentage:", accuracyPercentage);
+                participantChoices.push({
+                    GazingAccuracyStrict: accuracyPercentage2,
+                    GazingAccuracy: accuracyPercentage
+                });
 
                 message.style.display = 'none';  // Make sure the message is visible
                 let videoPage = document.getElementById("video");
@@ -744,7 +751,8 @@ function instructions() {
 
         setTimeout(function () {
             calibration(); // call calibration function
-        }, 3000);
+            message.style.display = 'none';
+        }, 5000);
 
 
         clearButtons();
@@ -776,7 +784,10 @@ var rkeyTimestamp = [];
 var pkeyTimestamp = [];
 
 function experimentalSet() {
-    webgazer.showPredictionPoints(false);
+    participantChoices.push({
+        part: "Experiment_Start"
+    });
+    webgazer.showPredictionPoints(true);
 
     // Start tracking gaze
     webgazer.showVideo(true); // Show webcam video feed
@@ -1287,13 +1298,17 @@ function shuffleArray(array) {
 
 // Generate data
 function generateAndUploadCSV(participantChoices) {
-    const header = ["part", "decision", "videoId", "reactionTime", "forcedVideoId", "currentDimness", "timeKeyFPressed",
+    const header = ["part", "GazingAccuracyStrict", "GazingAccuracy", "gazingPointX", "gazingPointY", "decision", "videoId", "reactionTime", "forcedVideoId", "currentDimness", "timeKeyFPressed",
     "timeKeyJPressed", "rating", "valence", "arousal", "initialValence", "initialArousal", "strategies"]; //initialValence and initialArousal if new flow
     const csvRows = [header];
 
     for (const row of participantChoices) {
       const rowData = [
         row.part,
+        row.GazingAccuracyStrict,
+        row.GazingAccuracy,
+        row.gazingPointX,
+        row.gazingPointY,
         row.decision,
         row.videoId,
         row.reactionTime,
