@@ -491,10 +491,13 @@ function instructions() {
 
         // Initialize Webgazer and start gaze tracking
         let lastRecordingTime = null;
-        webgazer.setGazeListener(function(data, timestamp) {
+        webgazer.setGazeListener(function(data, elapsedTime) {
+            if (data == null) {
+                console.log("data=null")
+                return;
+            }
 
             // Check if at least 500 milliseconds have passed since the last recording
-            let lastRecordingTime = null;
             const currentTime = new Date().getTime();
             if (!lastRecordingTime || currentTime - lastRecordingTime >= 500) {
                 // This function will be called when the gaze data is updated
