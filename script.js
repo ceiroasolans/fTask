@@ -650,10 +650,12 @@ function instructions() {
                 // Stricter method with threshold
                 const accuracyPercentage2 = (accurateGazePoints / distancesFromCenter.length) * 100;
 
-                if (averageDistance <= window.innerHeight / 2) {
-                    accuracyPercentage = (100 - (averageDistance/window.innerHeight / 2 * 100)).toFixed(2);
-                }
-                else {accuracyPercentage = 0}
+                accuracyPercentage = (100 - (averageDistance/window.innerHeight / 2 * 100)).toFixed(2);
+
+//                if (averageDistance <= window.innerHeight / 2) {
+//                    accuracyPercentage = (100 - (averageDistance/window.innerHeight / 2 * 100)).toFixed(2);
+//                }
+//                else {accuracyPercentage = 0}
 
                 // Now you have the accuracy metrics, such as average distance and accuracy percentage
                 console.log("Average Distance:", averageDistance);
