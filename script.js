@@ -460,6 +460,7 @@ function createEmotionGraph2(videoId, onSubmit) {
 
 
 // Instructions
+timeOut = false;
 function instructions() {
     let message = document.getElementById("message");
     message.innerHTML = `
@@ -483,7 +484,7 @@ function instructions() {
         let videoPage = document.getElementById("video");
         message.innerHTML = `
             <div style="max-width: 600px; margin: auto; padding: 20px; font-family: 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; text-align: left; color: #333;">
-                <strong style="font-size: 1.3em; display: block; text-align: center; margin-bottom: 20px;">Calibration the eye tracking functionality!</strong>
+                <strong style="font-size: 1.3em; display: block; text-align: center; margin-bottom: 20px;">Calibrate the eye tracking functionality!</strong>
                 <p style="margin-top: 20px;">Now please sit up in front of the web camera, wait until a video view appears at the top left. And make sure that your head is within the green square, and the face is captured correctly by the grids. When you are ready, click on next to move to calibration section!</p>
             </div>
         `;
@@ -516,7 +517,7 @@ function instructions() {
         webgazer.setTracker("TFFacemesh"); //set a tracker module
         webgazer.setRegression("ridge"); //set a regression module
 
-        webgazer.showPredictionPoints(true); // Show gaze prediction points on the screen
+        webgazer.showPredictionPoints(false); // Show gaze prediction points on the screen
 
         // Start tracking gaze
         webgazer.showVideo(true); // Show webcam video feed
@@ -540,6 +541,7 @@ function instructions() {
         function calibration() {
             clearButtons();
 
+            webgazer.showPredictionPoints(true);
             // Array of calibration points (x, y) screen coordinates
             const calibrationPoints = [
               { x: window.innerWidth / 3, y: 30 }, // UpperLeft-middle
@@ -599,18 +601,18 @@ function instructions() {
             var storedArray = [[], []];
 
             function collectingPrediction() {
-                console.log("Collecting testing points")
-                var prediction = webgazer.getCurrentPrediction();
-                console.log("prediction: ",prediction);
-                prediction.then(function(value) {
-                    console.log("value", value)
-                    var pointX = value.x;
-                    console.log("Stored pointX: ", pointX)
-                    storedArray[0].push(pointX);
-                    var pointY = value.y;
-                    console.log("Stored pointY: ", pointY)
-                    storedArray[1].push(pointY);
-                })
+                    console.log("Collecting testing points")
+                    var prediction = webgazer.getCurrentPrediction();
+                    console.log("prediction: ",prediction);
+                    prediction.then(function(value) {
+                        console.log("value", value)
+                        var pointX = value.x;
+                        console.log("Stored pointX: ", pointX)
+                        storedArray[0].push(pointX);
+                        var pointY = value.y;
+                        console.log("Stored pointY: ", pointY)
+                        storedArray[1].push(pointY);
+                    })
             }
 
             function precisionCalculation() {
@@ -670,6 +672,7 @@ function instructions() {
 
                 message.style.display = 'none';  // Make sure the message is visible
                 let videoPage = document.getElementById("video");
+                webgazer.showPredictionPoints(false);
                 message.innerHTML = `
                     <div style="max-width: 600px; margin: auto; padding: 20px; font-family: 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; text-align: left; color: #333;">
                         <strong style="font-size: 1.3em; display: block; text-align: center; margin-bottom: 20px;">The accuracy score is:</strong>
@@ -682,11 +685,12 @@ function instructions() {
                 // Provide options to recalibrate or move to next
                 clearButtons();
                 addButton(createButton("Recalibrate", () => {
-                    message.style.display = 'none';  // Make sure the message is visible
+                    message.style.display = 'none';  // Make sure the message is invisible
+                    webgazer.showPredictionPoints(true);
                     calibration();
                 }));
                 addButton(createButton("Next", () => {
-                    message.style.display = 'none';  // Make sure the message is visible
+                    message.style.display = 'none';  // Make sure the message is invisible
                     experimentalSet();
                 }));
             }
@@ -708,14 +712,12 @@ function instructions() {
                 console.log('Calibration completed.');
                 currentButton.remove(); // Remove the last button
 
-                // Append the fixation point to the body element (or any other container you prefer)
-                document.body.appendChild(fixationPoint);
-
                 message.style.display = 'none';  // Make sure the message is visible
+                  webgazer.showPredictionPoints(false);
                   let videoPage = document.getElementById("video");
                   message.innerHTML = `
                     <div style="max-width: 600px; margin: auto; padding: 20px; font-family: 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; text-align: left; color: #333;">
-                        <strong style="font-size: 1.3em; display: block; text-align: center; margin-bottom: 20px;">Please staring at the middle red point without moving or clicking mouse. The accuracy calculation will automatically start in 7 seconds. </strong>
+                        <strong style="font-size: 1.3em; display: block; text-align: center; margin-bottom: 20px;">Please staring at the middle without moving or clicking mouse. The accuracy calculation will automatically start in 7 seconds. </strong>
                     </div>
                   `;
                 message.style.display = 'block';  // Make sure the message is visible
@@ -723,16 +725,19 @@ function instructions() {
                 setTimeout(function() {
                   // Hide the elements after the initial 7 seconds
                   message.style.display = 'none';
+                  webgazer.showPredictionPoints(true);
+                  // Append the fixation point to the body element (or any other container you prefer)
+                  document.body.appendChild(fixationPoint);
 
                   // Collect prediction points for 1000 times
                     function count(times) {
                       var n = 0
                       console.log("Now start collecting prediction points")
-//                      webgazer.params.storingPoints = true;
                       collectingPrediction();
                       while (n < times) {
                         // collect points for n times
                         n += 1;
+
                       }
                     }
                     count(1000);
@@ -741,7 +746,6 @@ function instructions() {
                     precisionCalculation();
                   }, 1000);
                 }, 7000); // Initial 7 seconds delay
-
               }
             }
 
@@ -790,7 +794,7 @@ function experimentalSet() {
     participantChoices.push({
         part: "Experiment_Start"
     });
-    webgazer.showPredictionPoints(true);
+    webgazer.showPredictionPoints(false);
 
     // Start tracking gaze
     webgazer.showVideo(true); // Show webcam video feed
