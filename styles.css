@@ -43,9 +43,9 @@ body {
 
 
 #videoPlayer {
-    width: 100%;
-    height: 100%;
-    object-fit: contain; /* or 'cover' */
+    width: 600px;
+    height: 400px;
+    object-fit: fill; /* or 'cover' */
 }
 
 #fixationCross {

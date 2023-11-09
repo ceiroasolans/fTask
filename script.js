@@ -1,5 +1,6 @@
 // Double Task; comment things out to choose one or the other
 
+
 //Constants
 const mainContainer = document.getElementById("mainContainer");
 const videoPlayer = document.getElementById("videoPlayer");
@@ -135,8 +136,30 @@ const videos = [
     videos[i].id = i.toString();
 }
 
+function generateTimeBasedUniqueId(length = 5) {
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let randomPart = '';
+    const charactersLength = characters.length;
+
+    for (let i = 0; i < length; i++) {
+        randomPart += characters.charAt(Math.floor(Math.random() * charactersLength));
+    }
+
+    const timestamp = new Date().getTime(); // Gets current time in milliseconds
+    return `${timestamp}-${randomPart}`;
+}
+
+const participantID = generateTimeBasedUniqueId();
+console.log(participantID);
 
 let participantChoices = [];
+participantChoices.push({
+    windowSizeHeight: window.innerHeight,
+    windowSizeWidth: window.innerWidth,
+    screenSizeHeight: window.screen.height,
+    screenSizeWidth: window.screen.width,
+    participantID: participantID
+});
 
 let startTime;
 
@@ -1307,13 +1330,18 @@ function shuffleArray(array) {
 
 // Generate data
 function generateAndUploadCSV(participantChoices) {
-    const header = ["part", "GazingAccuracyStrict", "GazingAccuracy", "gazingPointX", "gazingPointY", "decision", "videoId", "reactionTime", "forcedVideoId", "currentDimness", "timeKeyFPressed",
+    const header = ["participantID", "part", "screenSizeWidth", "screenSizeHeight", "windowSizeWidth", "windowSizeHeight", "GazingAccuracyStrict", "GazingAccuracy", "gazingPointX", "gazingPointY", "decision", "videoId", "reactionTime", "forcedVideoId", "currentDimness", "timeKeyFPressed",
     "timeKeyJPressed", "rating", "valence", "arousal", "initialValence", "initialArousal", "strategies"]; //initialValence and initialArousal if new flow
     const csvRows = [header];
 
     for (const row of participantChoices) {
       const rowData = [
+        row.participantID,
         row.part,
+        row.screenSizeWidth,
+        row.screenSizeHeight,
+        row.windowSizeWidth,
+        row.windowSizeHeight,
         row.GazingAccuracyStrict,
         row.GazingAccuracy,
         row.gazingPointX,
@@ -1345,6 +1373,14 @@ function generateAndUploadCSV(participantChoices) {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    participantChoices = participantChoices.map(choice => {
+        if (typeof choice === 'object' && !Array.isArray(choice)) {
+            return { ...choice, ...questionnaireResponses }; // Merge the objects
+        } else {
+            console.error('Choice is not an object:', choice); // Log an error if the choice is not an object
+            return choice;
+        }
+    })
 
     // Upload to serverless function
 //    const uploadUrl = '/.netlify/functions/upload-csv';
