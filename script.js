@@ -1000,6 +1000,13 @@ function instructions() {
         message.style.display = 'block';  // Make sure the message is visible
 
         function calibration() {
+            participantChoices.push({
+//                part: "Calibration"
+                 windowSizeHeight: window.innerHeight,
+                windowSizeWidth: window.innerWidth,
+                screenSizeHeight: window.screen.height,
+                screenSizeWidth: window.screen.width
+            });
             document.body.classList.add('no-select');
             clearButtons();
 
@@ -1339,6 +1346,25 @@ function experimentalSet() {
 
 
 function playNextVideo() {
+    participantChoices.push({
+        part: "Play_video",
+        vID: video.src,
+         SID: participantSID,
+         name: participantName,
+         uniqueKey: participantUniqueKey,
+         startTime: timestamp1,
+         age: age,
+         racialIdentity: racialIdentity,
+         genderIdentity: genderIdentity,
+         fatherEducation: fatherEducation,
+         motherEducation: motherEducation,
+         familyIncome: familyIncome,
+         yearInSchool: yearInSchool,
+         windowSizeHeight: window.innerHeight,
+        windowSizeWidth: window.innerWidth,
+        screenSizeHeight: window.screen.height,
+        screenSizeWidth: window.screen.width
+    });
     if (currentVideoIndex < shuffledVideos.length) {
         const video = shuffledVideos[currentVideoIndex];
         videoPlayer.src = video.src;
@@ -1790,14 +1816,7 @@ function Questionnaire(participantChoices) {
     // For each object within participantChoices, merge it with questionnaireResponses
     const timestamp2 = new Date();
     questionnaireResponses["finishTime"] = timestamp2;
-    participantChoices = participantChoices.map(choice => {
-        if (typeof choice === 'object' && !Array.isArray(choice)) {
-            return { ...choice, ...questionnaireResponses }; // Merge the objects
-        } else {
-            console.error('Choice is not an object:', choice); // Log an error if the choice is not an object
-            return choice;
-        }
-    });
+
 
                 feedbackContainer.style.display = "none";
                 document.body.classList.remove('instructions-body-align');
@@ -1910,9 +1929,67 @@ function shuffleArray(array) {
 
 //                                              GENERATE DATA
 
+// Function to fill down the 'Experiment_' label until a condition is met, recurringly
+function fillDownRecurringLabels(rows, labelIndex, startLabels) {
+  // This will keep track of the current labels for each type of start label
+  let currentLabels = startLabels.reduce((acc, label) => {
+    acc[label] = null;
+    return acc;
+  }, {});
+
+  // Process each row
+  return rows.map((row) => {
+    let label = row[labelIndex];
+
+    // Check if the label is one of the start labels and update the current label
+    if (startLabels.includes(label)) {
+      currentLabels[label] = label;
+    }
+
+    // If the label is empty and we have a current label, fill it down
+    if (!label || label === '') {
+      const lastLabel = startLabels.find((sl) => currentLabels[sl]);
+      if (lastLabel) {
+        row[labelIndex] = currentLabels[lastLabel];
+      }
+    }
+
+    // Reset the label if it's not a start label
+    if (label && !startLabels.includes(label)) {
+      startLabels.forEach((sl) => { currentLabels[sl] = null; });
+    }
+
+    return row;
+  });
+}
+
+function fillDownSelectiveColumns(rows, copyColumnsIndices) {
+  let currentValues = new Array(rows[0].length).fill('');
+
+  // Iterate through each row, starting with the second row (i = 1)
+  for (let i = 1; i < rows.length; i++) {
+    // Iterate through each column within the row
+    for (let j = 0; j < rows[i].length; j++) {
+      // Check if the column is one of those that should have values copied down
+      if (copyColumnsIndices.includes(j)) {
+        // If the cell is empty, fill it with the current value for that column
+        if (rows[i][j] === '') {
+          rows[i][j] = currentValues[j];
+        } else {
+          // If the cell has a new value, update the current value for that column
+          currentValues[j] = rows[i][j];
+        }
+      }
+      // Columns not in copyColumnsIndices are not altered, so their unique values are preserved
+    }
+  }
+
+  return rows;
+}
+
 function generateAndUploadCSV(participantChoices) {
     const header = ["part","vID", "reactionTime","valenceForecast", "arousalForecast", "interestForecast", "valence", "arousal", "videoType", "EmoRated", "EmoScore", "WatchAgain", "SID", "name", "uniqueKey", "startTime", "age", "racialIdentity", "genderIdentity", "fatherEducation", "motherEducation", "familyIncome", "yearInSchool", "B_Active", "B_Afraid", "B_Amused", "B_Angry", "B_Aroused", "B_Calm", "B_Disgusted", "B_Excited", "B_Happy", "B_Hungry", "B_Inactive", "B_Loving", "B_Negative", "B_Peaceful", "B_Pleasant", "B_Positive", "B_Sad", "B_Still", "B_Unpleasant", "bfi_1", "bfi_2", "bfi_3", "bfi_4", "bfi_5", "bfi_6", "bfi_7", "bfi_8", "bfi_9", "bfi_10", "bfi_11", "bfi_12", "bfi_13", "bfi_14", "bfi_15", "bfi_16", "bfi_17", "AC1", "bfi_18", "bfi_19", "bfi_20", "bfi_21", "bfi_22", "bfi_23", "bfi_24", "bfi_25", "bfi_26", "bfi_27", "bfi_28", "bfi_29", "bfi_30", "bfi_31", "bfi_32", "bfi_33", "bfi_34", "bfi_35", "bfi_36", "bfi_37", "bfi_38", "bfi_39", "bfi_40", "bfi_41", "bfi_42", "bfi_43", "bfi_44", "bfi_45", "bfi_46", "bfi_47", "bfi_48", "bfi_49", "bfi_50", "bfi_51", "bfi_52", "bfi_53", "bfi_54", "bfi_55", "bfi_56", "bfi_57", "bfi_58", "bfi_59", "bfi_60", "SS_Gen1", "SM1", "SS_Av1", "SS_Ap1", "SM2", "SS_Gen2", "SS_Ap2", "SS_AvR", "SM3", "SS_Gen_3", "SS_Av3", "AC2", "SM4", "SS_ApR", "SS_Gen4", "SM5", "SS_Ap3", "SS_Av3", "ERQ1", "ERQ2", "ERQ3", "ERQ4", "ERQ5", "ERQ6", "ERQ7", "ERQ8", "ERQ9", "ERQ10", "finishTime", "windowSizeHeight","windowSizeWidth", "screenSizeHeight", "screenSizeWidth", "gazingPointX", "gazingPointY"];
-    const csvRows = [header];
+    let csvRows = [header];
   
     for (const row of participantChoices) {
       const rowData = [
@@ -1998,6 +2075,15 @@ function generateAndUploadCSV(participantChoices) {
 
       csvRows.push(rowData);
     }
+
+    const startLabels = ["Experiment_Start", "Play_video", "Still frame", "End still frame"];
+    csvRows = fillDownRecurringLabels(csvRows, header.indexOf('part'), startLabels)
+
+    const copyColumnsIndices = [1, 2, 3, 4, 5, 6, 7];
+    for (let i = 11; i <= header.length - 1; i++) {
+      copyColumnsIndices.push(i);
+    }
+    csvRows = fillDownSelectiveColumns(csvRows, copyColumnsIndices);
   
     const csvContent = csvRows.map(e => e.join(",")).join("\n");
     console.log(csvContent); 
